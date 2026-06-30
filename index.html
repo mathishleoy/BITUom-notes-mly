@@ -5,491 +5,520 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bachelor of Information Technology - Notes</title>
 
-<!-- ============================================================
-     EXTERNAL LIBRARIES (via CDN — no build step, no backend)
-     - marked.js      : converts Markdown -> HTML
-     - html2pdf.js     : converts rendered HTML -> downloadable PDF
-     ============================================================ -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
 <style>
-  :root{
-    --bg:#0d0f12;
-    --bg-panel:#111418;
-    --bg-elevated:#161a1f;
-    --border:#262b32;
-    --text:#e6e8eb;
-    --text-dim:#8b929c;
-    --text-faint:#565d66;
-    --accent:#7dd3a8;
-    --accent-dim:#3f5c4d;
-    --mono: "SFMono-Regular", "JetBrains Mono", Consolas, "Courier New", monospace;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  }
-
-  body.light{
-    --bg:#fafafa;
-    --bg-panel:#f2f3f4;
-    --bg-elevated:#eaecee;
-    --border:#dadde0;
-    --text:#1a1d20;
-    --text-dim:#52585f;
-    --text-faint:#888f96;
-    --accent:#1f8a5c;
-    --accent-dim:#cfe9da;
-  }
-
-  body{ transition:background .15s, color .15s; }
-
-  *{box-sizing:border-box;}
-  html,body{height:100%;}
-  body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:var(--sans);
-    display:flex;
-    flex-direction:column;
-  }
-
-  /* ---------- Header ---------- */
-  header{
-    padding:22px 28px;
-    border-bottom:1px solid var(--border);
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:8px;
-  }
-  header h1{
-    font-size:16px;
-    font-weight:600;
-    letter-spacing:0.02em;
-    margin:0;
-  }
-  header h1 span{ color:var(--text-dim); font-weight:400; }
-  header .sub{
-    font-size:12.5px;
-    color:var(--text-faint);
-    font-family:var(--mono);
-  }
-  .header-right{
-    display:flex;
-    align-items:center;
-    gap:14px;
-  }
-  #theme-toggle{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    width:32px;
-    height:32px;
-    border-radius:7px;
-    border:1px solid var(--border);
-    background:var(--bg-elevated);
-    color:var(--text-dim);
-    cursor:pointer;
-    transition:color .12s, border-color .12s;
-  }
-  #theme-toggle:hover{ color:var(--accent); border-color:var(--accent-dim); }
-  #theme-toggle svg{ width:16px; height:16px; fill:currentColor; }
-  #theme-toggle .icon-moon{ display:block; }
-  #theme-toggle .icon-sun{ display:none; }
-  body.light #theme-toggle .icon-moon{ display:none; }
-  body.light #theme-toggle .icon-sun{ display:block; }
-
-  /* ---------- Main view tabs ---------- */
-  .main-tabs{
-    display:flex;
-    gap:4px;
-    padding:10px 28px;
-    border-bottom:1px solid var(--border);
-    background:var(--bg-panel);
-  }
-  .tab-btn{
-    font-family:var(--sans);
-    font-size:13px;
-    background:transparent;
-    color:var(--text-faint);
-    border:1px solid transparent;
-    padding:7px 14px;
-    border-radius:6px;
-    cursor:pointer;
-    transition:color .12s, background .12s, border-color .12s;
-  }
-  .tab-btn:hover{ color:var(--text); }
-  .tab-btn.active{
-    color:var(--accent);
-    background:var(--bg-elevated);
-    border-color:var(--border);
-  }
-  .view{ display:none; flex:1; min-height:0; }
-  .view.active{ display:flex; }
-
-  /* ---------- Layout ---------- */
-  /* .app reuses the .view / .view.active display rules below */
-
-  /* ---------- Tree panel ---------- */
-  .tree-panel{
-    width:340px;
-    min-width:240px;
-    max-width:50vw;
-    border-right:1px solid var(--border);
-    background:var(--bg-panel);
-    overflow-y:auto;
-    padding:18px 10px;
-    font-family:var(--mono);
-    font-size:13.5px;
-    resize:horizontal;
-  }
-  .tree-panel::-webkit-scrollbar{ width:8px; }
-  .tree-panel::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
-
-  .tree-root-label{
-    color:var(--text-faint);
-    padding:0 10px 10px 10px;
-    font-size:11px;
-    text-transform:uppercase;
-    letter-spacing:0.08em;
-  }
-
-  ul.tree, ul.tree ul{
-    list-style:none;
-    margin:0;
-    padding-left:0;
-  }
-  ul.tree ul{ padding-left:18px; }
-
-  .tree li{ position:relative; white-space:nowrap; }
-
-  .node{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    padding:3px 8px;
-    border-radius:5px;
-    cursor:pointer;
-    color:var(--text-dim);
-    user-select:none;
-    transition:background .12s, color .12s;
-  }
-  .node:hover{ background:var(--bg-elevated); color:var(--text); }
-  .node.active{ background:var(--accent-dim); color:var(--accent); }
-
-  .node .glyph{ color:var(--text-faint); width:14px; display:inline-block; text-align:center; }
-  .node.folder .glyph{ color:var(--text-dim); }
-  .node .label{ flex:1; overflow:hidden; text-overflow:ellipsis; }
-  .node .tag{
-    font-size:10px;
-    color:var(--text-faint);
-    border:1px solid var(--border);
-    border-radius:3px;
-    padding:0 4px;
-  }
-
-  /* ---------- Content panel ---------- */
-  .content-panel{
-    flex:1;
-    overflow-y:auto;
-    padding:0;
-    display:flex;
-    flex-direction:column;
-  }
-
-  .empty-state{
-    margin:auto;
-    text-align:center;
-    color:var(--text-faint);
-    font-family:var(--mono);
-    font-size:13px;
-    padding:40px;
-  }
-  .empty-state pre{
-    color:var(--text-dim);
-    text-align:left;
-    display:inline-block;
-    margin:0 0 18px 0;
-  }
-
-  .doc-toolbar{
-    position:sticky;
-    top:0;
-    background:var(--bg);
-    border-bottom:1px solid var(--border);
-    padding:14px 32px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:16px;
-    flex-wrap:wrap;
-    z-index:5;
-  }
-  .doc-path{
-    font-family:var(--mono);
-    font-size:12.5px;
-    color:var(--text-faint);
-  }
-  .doc-path b{ color:var(--text); font-weight:500; }
-
-  .doc-actions{ display:flex; gap:8px; }
-  .btn{
-    font-family:var(--sans);
-    font-size:12.5px;
-    background:var(--bg-elevated);
-    color:var(--text);
-    border:1px solid var(--border);
-    padding:7px 13px;
-    border-radius:6px;
-    cursor:pointer;
-    transition:border-color .12s, color .12s;
-  }
-  .btn:hover{ border-color:var(--accent); color:var(--accent); }
-  .btn.primary{ border-color:var(--accent-dim); color:var(--accent); }
-
-  .doc-body{
-    max-width:760px;
-    width:100%;
-    margin:0 auto;
-    padding:40px 32px 100px 32px;
-  }
-  #rendered-md{
-    line-height:1.7;
-    font-size:15.5px;
-  }
-  #rendered-md h1, #rendered-md h2, #rendered-md h3{
-    font-weight:600;
-    border-bottom:1px solid var(--border);
-    padding-bottom:6px;
-    margin-top:1.8em;
-  }
-  #rendered-md h1{ font-size:1.6em; }
-  #rendered-md h2{ font-size:1.3em; }
-  #rendered-md h3{ font-size:1.1em; }
-  #rendered-md code{
-    font-family:var(--mono);
-    background:var(--bg-elevated);
-    padding:2px 5px;
-    border-radius:4px;
-    font-size:0.88em;
-  }
-  #rendered-md pre{
-    background:var(--bg-elevated);
-    border:1px solid var(--border);
-    padding:14px 16px;
-    border-radius:8px;
-    overflow-x:auto;
-  }
-  #rendered-md pre code{ background:none; padding:0; }
-  #rendered-md a{ color:var(--accent); }
-  #rendered-md blockquote{
-    border-left:3px solid var(--accent-dim);
-    margin:0;
-    padding:2px 16px;
-    color:var(--text-dim);
-  }
-  #rendered-md table{ border-collapse:collapse; width:100%; }
-  #rendered-md th, #rendered-md td{
-    border:1px solid var(--border);
-    padding:6px 10px;
-    font-size:0.92em;
-  }
-  #rendered-md img{ max-width:100%; }
-  #rendered-md ul, #rendered-md ol{ padding-left:1.3em; }
-
-  .status-msg{
-    font-family:var(--mono);
-    font-size:13px;
-    color:var(--text-faint);
-    padding:40px 0;
-  }
-
-  @media (max-width:720px){
-    .app{ flex-direction:column; }
-    .tree-panel{ width:100%; max-width:100%; max-height:40vh; border-right:none; border-bottom:1px solid var(--border); }
-    .doc-body{ padding:24px 18px 80px 18px; }
-    .doc-toolbar{ padding:12px 18px; }
-  }
-
-  /* ---------- GPA Calculator ---------- */
-  .gpa-view{
-    flex-direction:column;
-    overflow-y:auto;
-  }
-  .gpa-body{
-    max-width:880px;
-    width:100%;
-    margin:0 auto;
-    padding:32px 28px 100px 28px;
-  }
-  .warning-banner{
-    display:flex;
-    gap:12px;
-    align-items:flex-start;
-    background:var(--bg-elevated);
-    border:1px solid var(--accent-dim);
-    border-radius:10px;
-    padding:14px 16px;
-    margin-bottom:26px;
-    font-size:13px;
-    line-height:1.55;
-    color:var(--text-dim);
-  }
-  .warning-banner .icon{ font-size:18px; line-height:1; }
-  .warning-banner b{ color:var(--text); }
-
-  .gpa-toolbar{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:12px;
-    margin-bottom:18px;
-  }
-  .field-group{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dim); }
-  select, input[type="text"], input[type="number"]{
-    font-family:var(--sans);
-    font-size:13px;
-    background:var(--bg-elevated);
-    color:var(--text);
-    border:1px solid var(--border);
-    border-radius:6px;
-    padding:6px 9px;
-  }
-  select:focus, input:focus{ outline:1px solid var(--accent-dim); }
-
-  .level-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
-  .level-tab{
-    font-size:12.5px;
-    font-family:var(--sans);
-    font-weight:600;
-    padding:7px 13px;
-    border-radius:6px;
-    border:1px solid var(--border);
-    background:var(--bg-panel);
-    color:var(--text-dim);
-    cursor:pointer;
-  }
-  .level-tab.active{ color:var(--accent); border-color:var(--accent-dim); background:var(--bg-elevated); }
-  .level-tab.add{ color:var(--text-faint); font-weight:400; }
-
-  .semester-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
-  .sem-tab{
-    font-size:12.5px;
-    font-family:var(--mono);
-    padding:6px 11px;
-    border-radius:6px;
-    border:1px solid var(--border);
-    background:var(--bg-panel);
-    color:var(--text-dim);
-    cursor:pointer;
-  }
-  .sem-tab.active{ color:var(--accent); border-color:var(--accent-dim); background:var(--bg-elevated); }
-  .sem-tab.add{ color:var(--text-faint); }
-
-  table.course-table{ width:100%; border-collapse:collapse; margin-bottom:14px; }
-  table.course-table th{
-    text-align:left;
-    font-size:11px;
-    text-transform:uppercase;
-    letter-spacing:0.06em;
-    color:var(--text-faint);
-    padding:6px 8px;
-    border-bottom:1px solid var(--border);
-  }
-  table.course-table td{
-    padding:6px 8px;
-    border-bottom:1px solid var(--border);
-  }
-  table.course-table input[type="text"]{ width:100%; min-width:120px; }
-  table.course-table input[type="number"]{ width:80px; }
-  .row-remove{
-    background:none;
-    border:none;
-    color:var(--text-faint);
-    cursor:pointer;
-    font-size:15px;
-    padding:2px 6px;
-  }
-  .row-remove:hover{ color:#e06262; }
-
-  .gpa-summary{
-    display:flex;
-    gap:14px;
-    flex-wrap:wrap;
-    margin:22px 0;
-  }
-  .gpa-card{
-    flex:1;
-    min-width:180px;
-    background:var(--bg-elevated);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:16px 18px;
-  }
-  .gpa-card .label{ font-size:11.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em; }
-  .gpa-card .value{ font-size:28px; font-weight:600; color:var(--accent); margin-top:4px; font-family:var(--mono); }
-
-  .gpa-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-  .share-box{
-    display:none;
-    margin-top:14px;
-    padding:12px 14px;
-    background:var(--bg-elevated);
-    border:1px solid var(--border);
-    border-radius:8px;
-    gap:8px;
-    align-items:center;
-    flex-wrap:wrap;
-  }
-  .share-box.show{ display:flex; }
-  .share-box input{ flex:1; min-width:200px; font-family:var(--mono); font-size:12px; }
-
-
-  footer{
-    border-top:1px solid var(--border);
-    background:var(--bg-panel);
-    padding:14px 28px;
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    gap:14px;
-    flex-wrap:wrap;
-  }
-  footer .credit{
-    font-size:12.5px;
-    color:var(--text-faint);
-    font-family:var(--mono);
-  }
-  footer .socials{
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
-  footer .socials a{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    width:28px;
-    height:28px;
-    border-radius:6px;
-    color:var(--text-dim);
-    border:1px solid var(--border);
-    transition:color .12s, border-color .12s, background .12s;
-  }
-  footer .socials a:hover{
-    color:var(--accent);
-    border-color:var(--accent-dim);
-    background:var(--bg-elevated);
-  }
-  footer .socials svg{ width:15px; height:15px; fill:currentColor; }
+:root{
+  --bg:#0d0f12;
+  --bg-panel:#111418;
+  --bg-elevated:#161a1f;
+  --border:#262b32;
+  --text:#e6e8eb;
+  --text-dim:#8b929c;
+  --text-faint:#565d66;
+  --accent:#7dd3a8;
+  --accent-dim:#3f5c4d;
+  --mono:"SFMono-Regular","JetBrains Mono",Consolas,"Courier New",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+body.light{
+  --bg:#fafafa;
+  --bg-panel:#f2f3f4;
+  --bg-elevated:#eaecee;
+  --border:#dadde0;
+  --text:#1a1d20;
+  --text-dim:#52585f;
+  --text-faint:#888f96;
+  --accent:#1f8a5c;
+  --accent-dim:#cfe9da;
+}
+body{transition:background .15s,color .15s;}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  display:flex;
+  flex-direction:column;
+}
+header{
+  padding:22px 28px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+}
+header h1{
+  font-size:16px;
+  font-weight:600;
+  letter-spacing:0.02em;
+  margin:0;
+}
+header h1 span{color:var(--text-dim);font-weight:400;}
+header .sub{
+  font-size:12.5px;
+  color:var(--text-faint);
+  font-family:var(--mono);
+}
+.header-right{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+#theme-toggle{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:32px;
+  height:32px;
+  border-radius:7px;
+  border:1px solid var(--border);
+  background:var(--bg-elevated);
+  color:var(--text-dim);
+  cursor:pointer;
+  transition:color .12s,border-color .12s;
+}
+#theme-toggle:hover{color:var(--accent);border-color:var(--accent-dim);}
+#theme-toggle svg{width:16px;height:16px;fill:currentColor;}
+#theme-toggle .icon-moon{display:block;}
+#theme-toggle .icon-sun{display:none;}
+body.light #theme-toggle .icon-moon{display:none;}
+body.light #theme-toggle .icon-sun{display:block;}
+.main-tabs{
+  display:flex;
+  gap:4px;
+  padding:10px 28px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg-panel);
+}
+.tab-btn{
+  font-family:var(--sans);
+  font-size:13px;
+  background:transparent;
+  color:var(--text-faint);
+  border:1px solid transparent;
+  padding:7px 14px;
+  border-radius:6px;
+  cursor:pointer;
+  transition:color .12s,background .12s,border-color .12s;
+}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{
+  color:var(--accent);
+  background:var(--bg-elevated);
+  border-color:var(--border);
+}
+.view{display:none;flex:1;min-height:0;}
+.view.active{display:flex;}
+.tree-panel{
+  width:340px;
+  min-width:240px;
+  max-width:50vw;
+  border-right:1px solid var(--border);
+  background:var(--bg-panel);
+  overflow-y:auto;
+  padding:18px 10px;
+  font-family:var(--mono);
+  font-size:13.5px;
+  resize:horizontal;
+}
+.tree-panel::-webkit-scrollbar{width:8px;}
+.tree-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.tree-root-label{
+  color:var(--text-faint);
+  padding:0 10px 10px 10px;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+}
+ul.tree,ul.tree ul{list-style:none;margin:0;padding-left:0;}
+ul.tree ul{padding-left:18px;}
+.tree li{position:relative;white-space:nowrap;}
+.node{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:3px 8px;
+  border-radius:5px;
+  cursor:pointer;
+  color:var(--text-dim);
+  user-select:none;
+  transition:background .12s,color .12s;
+}
+.node:hover{background:var(--bg-elevated);color:var(--text);}
+.node.active{background:var(--accent-dim);color:var(--accent);}
+.node .glyph{color:var(--text-faint);width:14px;display:inline-block;text-align:center;}
+.node.folder .glyph{color:var(--text-dim);}
+.node .label{flex:1;overflow:hidden;text-overflow:ellipsis;}
+.node .tag{
+  font-size:10px;
+  color:var(--text-faint);
+  border:1px solid var(--border);
+  border-radius:3px;
+  padding:0 4px;
+}
+.content-panel{
+  flex:1;
+  overflow-y:auto;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+}
+.empty-state{
+  margin:auto;
+  text-align:center;
+  color:var(--text-faint);
+  font-family:var(--mono);
+  font-size:13px;
+  padding:40px;
+}
+.empty-state pre{
+  color:var(--text-dim);
+  text-align:left;
+  display:inline-block;
+  margin:0 0 18px 0;
+}
+.doc-toolbar{
+  position:sticky;
+  top:0;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+  padding:14px 32px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  z-index:5;
+}
+.doc-path{
+  font-family:var(--mono);
+  font-size:12.5px;
+  color:var(--text-faint);
+}
+.doc-path b{color:var(--text);font-weight:500;}
+.doc-actions{display:flex;gap:8px;}
+.btn{
+  font-family:var(--sans);
+  font-size:12.5px;
+  background:var(--bg-elevated);
+  color:var(--text);
+  border:1px solid var(--border);
+  padding:7px 13px;
+  border-radius:6px;
+  cursor:pointer;
+  transition:border-color .12s,color .12s;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.primary{border-color:var(--accent-dim);color:var(--accent);}
+.doc-body{
+  max-width:760px;
+  width:100%;
+  margin:0 auto;
+  padding:40px 32px 100px 32px;
+}
+.status-msg{
+  font-family:var(--mono);
+  font-size:13px;
+  color:var(--text-faint);
+  padding:40px 0;
+}
+.pdf-preview-wrap{
+  max-width:900px;
+  width:100%;
+  margin:0 auto;
+  padding:24px 32px 60px 32px;
+}
+.pdf-frame{
+  width:100%;
+  height:80vh;
+  min-height:480px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:var(--bg-elevated);
+}
+.btn-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:32px;
+  height:32px;
+  padding:0;
+}
+.btn-icon svg{width:16px;height:16px;fill:currentColor;}
+.btn-icon{cursor:pointer;}
+.thanks-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.55);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  padding:20px;
+}
+.thanks-overlay.show{display:flex;}
+.thanks-box{
+  background:var(--bg-elevated);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:22px 24px;
+  max-width:320px;
+  width:100%;
+  text-align:center;
+  box-shadow:0 14px 40px rgba(0,0,0,0.35);
+  animation:thanksPop .18s ease;
+}
+@keyframes thanksPop{
+  from{opacity:0;transform:scale(.95) translateY(4px);}
+  to{opacity:1;transform:scale(1) translateY(0);}
+}
+.thanks-box .check{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:var(--accent-dim);
+  color:var(--accent);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto 12px auto;
+}
+.thanks-box .check svg{width:20px;height:20px;fill:currentColor;}
+.thanks-box h3{
+  margin:0 0 6px 0;
+  font-size:14.5px;
+  font-weight:600;
+  color:var(--text);
+}
+.thanks-box p{
+  margin:0 0 16px 0;
+  font-size:12.5px;
+  line-height:1.55;
+  color:var(--text-dim);
+}
+.thanks-box p b{color:var(--text);font-weight:600;}
+.thanks-socials{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin-bottom:14px;
+}
+.thanks-socials a{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:32px;
+  height:32px;
+  border-radius:7px;
+  color:var(--text-dim);
+  border:1px solid var(--border);
+  transition:color .12s,border-color .12s,background .12s,transform .12s;
+}
+.thanks-socials a:hover{
+  color:var(--accent);
+  border-color:var(--accent-dim);
+  background:var(--bg-panel);
+  transform:translateY(-1px);
+}
+.thanks-socials svg{width:15px;height:15px;fill:currentColor;}
+.thanks-box .thanks-close{
+  width:100%;
+  justify-content:center;
+}
+@media (max-width:720px){
+  .app{flex-direction:column;}
+  .tree-panel{width:100%;max-width:100%;max-height:40vh;border-right:none;border-bottom:1px solid var(--border);}
+  .doc-body{padding:24px 18px 80px 18px;}
+  .doc-toolbar{padding:12px 18px;}
+  .pdf-preview-wrap{padding:16px 18px 50px 18px;}
+  .pdf-frame{height:65vh;}
+}
+.gpa-view{flex-direction:column;overflow-y:auto;}
+.gpa-body{
+  max-width:880px;
+  width:100%;
+  margin:0 auto;
+  padding:32px 28px 100px 28px;
+}
+.warning-banner{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  background:var(--bg-elevated);
+  border:1px solid var(--accent-dim);
+  border-radius:10px;
+  padding:14px 16px;
+  margin-bottom:26px;
+  font-size:13px;
+  line-height:1.55;
+  color:var(--text-dim);
+}
+.warning-banner .icon{font-size:18px;line-height:1;}
+.warning-banner b{color:var(--text);}
+.gpa-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-bottom:18px;
+}
+.field-group{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);}
+select,input[type="text"],input[type="number"]{
+  font-family:var(--sans);
+  font-size:13px;
+  background:var(--bg-elevated);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:6px 9px;
+}
+select:focus,input:focus{outline:1px solid var(--accent-dim);}
+.level-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.level-tab{
+  font-size:12.5px;
+  font-family:var(--sans);
+  font-weight:600;
+  padding:7px 13px;
+  border-radius:6px;
+  border:1px solid var(--border);
+  background:var(--bg-panel);
+  color:var(--text-dim);
+  cursor:pointer;
+}
+.level-tab.active{color:var(--accent);border-color:var(--accent-dim);background:var(--bg-elevated);}
+.level-tab.add{color:var(--text-faint);font-weight:400;}
+.semester-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.sem-tab{
+  font-size:12.5px;
+  font-family:var(--mono);
+  padding:6px 11px;
+  border-radius:6px;
+  border:1px solid var(--border);
+  background:var(--bg-panel);
+  color:var(--text-dim);
+  cursor:pointer;
+}
+.sem-tab.active{color:var(--accent);border-color:var(--accent-dim);background:var(--bg-elevated);}
+.sem-tab.add{color:var(--text-faint);}
+table.course-table{width:100%;border-collapse:collapse;margin-bottom:14px;}
+table.course-table th{
+  text-align:left;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:var(--text-faint);
+  padding:6px 8px;
+  border-bottom:1px solid var(--border);
+}
+table.course-table td{
+  padding:6px 8px;
+  border-bottom:1px solid var(--border);
+}
+table.course-table input[type="text"]{width:100%;min-width:120px;}
+table.course-table input[type="number"]{width:80px;}
+.row-remove{
+  background:none;
+  border:none;
+  color:var(--text-faint);
+  cursor:pointer;
+  font-size:15px;
+  padding:2px 6px;
+}
+.row-remove:hover{color:#e06262;}
+.gpa-summary{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  margin:22px 0;
+}
+.gpa-card{
+  flex:1;
+  min-width:180px;
+  background:var(--bg-elevated);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 18px;
+}
+.gpa-card .label{
+  font-size:11.5px;
+  color:var(--text-faint);
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+}
+.gpa-card .value{
+  font-size:28px;
+  font-weight:600;
+  color:var(--accent);
+  margin-top:4px;
+  font-family:var(--mono);
+}
+.gpa-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.share-box{
+  display:none;
+  margin-top:14px;
+  padding:12px 14px;
+  background:var(--bg-elevated);
+  border:1px solid var(--border);
+  border-radius:8px;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.share-box.show{display:flex;}
+.share-box input{
+  flex:1;
+  min-width:200px;
+  font-family:var(--mono);
+  font-size:12px;
+}
+footer{
+  border-top:1px solid var(--border);
+  background:var(--bg-panel);
+  padding:14px 28px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:14px;
+  flex-wrap:wrap;
+}
+footer .credit{
+  font-size:12.5px;
+  color:var(--text-faint);
+  font-family:var(--mono);
+}
+footer .socials{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+footer .socials a{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  border-radius:6px;
+  color:var(--text-dim);
+  border:1px solid var(--border);
+  transition:color .12s,border-color .12s,background .12s;
+}
+footer .socials a:hover{
+  color:var(--accent);
+  border-color:var(--accent-dim);
+  background:var(--bg-elevated);
+}
+footer .socials svg{width:15px;height:15px;fill:currentColor;}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Bachelor of Information Technology <span>// University of Moratuwa</span></h1>
+  <h1>BIT-RC [Resource Center] <span>// Bachelor of Information Technology - UOM</span></h1>
   <div class="header-right">
     <div class="sub">static · github pages</div>
     <button id="theme-toggle" aria-label="Toggle light/dark theme">
@@ -510,10 +539,9 @@
     <div class="tree-root-label">notes/</div>
     <ul class="tree" id="tree-root"></ul>
   </nav>
-
   <main class="content-panel" id="content-panel">
     <div class="empty-state">
-<pre>┌─ notes/
+      <pre>┌─ notes/
 └── (add your semesters in FOLDER_STRUCTURE)</pre>
       <div>Select a file from the tree to view its contents.</div>
     </div>
@@ -525,10 +553,9 @@
     <div class="tree-root-label">papers/</div>
     <ul class="tree" id="tree-root-papers"></ul>
   </nav>
-
   <main class="content-panel" id="content-panel-papers">
     <div class="empty-state">
-<pre>┌─ papers/
+      <pre>┌─ papers/
 └── (add your semesters in PAPERS_STRUCTURE)</pre>
       <div>Select a paper from the tree to view its contents.</div>
     </div>
@@ -537,7 +564,6 @@
 
 <div class="view gpa-view" id="view-gpa">
   <div class="gpa-body">
-
     <div class="warning-banner">
       <span class="icon">🗃️</span>
       <div>
@@ -603,10 +629,8 @@
       <b>D</b>, or <b>C-</b> can be upgraded up to a <b>C</b>. This calculator does not enforce those repeat
       rules automatically — enter the grade you expect will be used on your transcript.
     </p>
-
   </div>
 </div>
-
 
 <footer>
   <span class="credit">Crafted by Mathishleoy</span>
@@ -623,135 +647,512 @@
   </div>
 </footer>
 
+<!-- ========== Thank‑you overlay (now before the script) ========== -->
+<div class="thanks-overlay" id="thanks-overlay">
+  <div class="thanks-box">
+    <div class="check">
+      <svg viewBox="0 0 24 24"><path d="M12 3v10.59l3.3-3.3 1.4 1.42L12 17.42l-4.7-4.71 1.4-1.42 3.3 3.3V3h2zM5 19h14v2H5v-2z"/></svg>
+    </div>
+    <h3>PDF opened in new tab</h3>
+    <p>You can now download it using your browser's PDF viewer or the Drive interface.</p>
+    <p>Shoutout to <b>Mathisha Wimalarathna</b> for this content 🙌</p>
+    <div class="thanks-socials">
+      <a href="https://instagram.com/mathishleoy" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.85.07 1.17.05 1.97.24 2.43.4a4.9 4.9 0 0 1 1.77 1.15 4.9 4.9 0 0 1 1.15 1.77c.16.46.35 1.26.4 2.43.06 1.25.07 1.65.07 4.85s0 3.6-.07 4.85c-.05 1.17-.24 1.97-.4 2.43a4.9 4.9 0 0 1-1.15 1.77 4.9 4.9 0 0 1-1.77 1.15c-.46.16-1.26.35-2.43.4-1.25.06-1.65.07-4.85.07s-3.6 0-4.85-.07c-1.17-.05-1.97-.24-2.43-.4a4.9 4.9 0 0 1-1.77-1.15 4.9 4.9 0 0 1-1.15-1.77c-.16-.46-.35-1.26-.4-2.43C2.2 15.6 2.2 15.2 2.2 12s0-3.6.07-4.85c.05-1.17.24-1.97.4-2.43A4.9 4.9 0 0 1 3.82 2.95 4.9 4.9 0 0 1 5.59 1.8c.46-.16 1.26-.35 2.43-.4C9.27 1.34 9.67 1.33 12 1.33zm0 1.8c-3.15 0-3.52 0-4.76.07-1.04.05-1.6.22-1.98.36-.5.19-.85.42-1.22.8-.38.37-.6.72-.8 1.22-.14.38-.3.94-.36 1.98-.06 1.24-.07 1.61-.07 4.76s.01 3.52.07 4.76c.05 1.04.22 1.6.36 1.98.19.5.42.85.8 1.22.37.38.72.6 1.22.8.38.14.94.3 1.98.36 1.24.06 1.61.07 4.76.07s3.52-.01 4.76-.07c1.04-.05 1.6-.22 1.98-.36.5-.19.85-.42 1.22-.8.38-.37.6-.72.8-1.22.14-.38.3-.94.36-1.98.06-1.24.07-1.61.07-4.76s-.01-3.52-.07-4.76c-.05-1.04-.22-1.6-.36-1.98-.19-.5-.42-.85-.8-1.22a3.1 3.1 0 0 0-1.22-.8c-.38-.14-.94-.3-1.98-.36C15.52 4 15.15 4 12 4zm0 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 1.8a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4zm5.74-1.99a1.05 1.05 0 1 1-2.1 0 1.05 1.05 0 0 1 2.1 0z"/></svg>
+      </a>
+      <a href="https://tiktok.com/@mathishleoy" target="_blank" rel="noopener" aria-label="TikTok">
+        <svg viewBox="0 0 24 24"><path d="M16.6 2h-3.2v13.6a2.9 2.9 0 1 1-2.05-2.77V9.6a6.1 6.1 0 1 0 5.25 6.05V8.84a8.1 8.1 0 0 0 4.6 1.44V7.06a4.85 4.85 0 0 1-4.6-3.5V2z"/></svg>
+      </a>
+      <a href="https://facebook.com/mathishleoy" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24"><path d="M13.5 21.9v-8.4h2.82l.42-3.27H13.5V8.13c0-.95.26-1.6 1.62-1.6h1.74V3.6A23.3 23.3 0 0 0 14.32 3.5c-2.5 0-4.22 1.53-4.22 4.33v2.4H7.27v3.27h2.83v8.4h3.4z"/></svg>
+      </a>
+    </div>
+    <button type="button" class="btn thanks-close" id="thanks-close-btn">Close</button>
+  </div>
+</div>
+
+<!-- ========== All JavaScript moved to the very end ========== -->
 <script>
-/* ================================================================
-   FOLDER STRUCTURE CONFIGURATION
-   ----------------------------------------------------------------
-   This JSON object defines the entire tree shown in the navigator.
-   It is hardcoded here (no backend / API / directory listing call)
-   so the site works as a 100% static GitHub Pages deployment.
-
-   ARCHITECTURE:
-     notes/
-       semester-1/
-         <module-name>/   (a folder, one per module/course)
-           note.md         (the note file for that module)
-         <module-name>/
-           note.md
-       semester-2/
-         <module-name>/
-           note.md
-       ...
-
-   STRUCTURE RULES:
-   - Each node is either a "folder" or a "file".
-   - A "folder" node has: { type: "folder", name: "...", children: [...] }
-   - A "file" node has:   { type: "file", name: "...", path: "..." }
-     "path" must be the relative path (from this HTML file) to the
-     actual .md file committed in the repository, e.g.
-     "notes/semester-1/introduction-to-programming/note.md"
-
-   HOW TO ADD A NEW SEMESTER:
-     Add a new folder object to FOLDER_STRUCTURE.children, e.g.:
-       { type: "folder", name: "semester-3", children: [ ... ] }
-
-   HOW TO ADD A NEW MODULE (FOLDER) INSIDE A SEMESTER:
-     Add a new folder object inside that semester's "children" array, e.g.:
-       { type: "folder", name: "operating-systems", children: [
-           { type: "file", name: "note.md", path: "notes/semester-3/operating-systems/note.md" }
-       ] }
-
-   HOW TO ADD A NEW NOTE FILE TO A MODULE:
-     Add another file object inside that module's "children" array:
-       { type: "file", name: "note-2.md", path: "notes/semester-1/introduction-to-programming/note-2.md" }
-     Make sure the .md file actually exists at that path in the repo.
-   ================================================================ */
 const FOLDER_STRUCTURE = {
-  type: "folder",
-  name: "notes",
-  children: [
-    // EMPTY ON PURPOSE — this is a clean skeleton ready for your real content.
-    // Paste in semester blocks like the example below (then delete this comment).
-    //
-    // {
-    //   type: "folder",
-    //   name: "semester-1",
-    //   children: [
-    //     {
-    //       type: "folder",
-    //       name: "introduction-to-programming",
-    //       children: [
-    //         { type: "file", name: "note.md", path: "notes/semester-1/introduction-to-programming/note.md" }
-    //       ]
-    //     }
-    //   ]
-    // },
+  "type": "folder",
+  "name": "notes",
+  "children": [
+    {
+      "type": "folder",
+      "name": "Semester-1",
+      "children": [
+        {
+          "type": "folder",
+          "name": "ITE 1913 - Communication Skills Development",
+          "children": [
+            {
+              "type": "file",
+              "name": "01.pdf",
+              "url": "https://drive.google.com/file/d/1qwsh7U8_206LgBmVfLjMomBBv80P6dqp/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "02.pdf",
+              "url": "https://drive.google.com/file/d/1Gt-AvS1x0D1LgxMnhNLe6nrRMYq3EU4r/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "03.pdf",
+              "url": "https://drive.google.com/file/d/1JKVG00dWgEAmoHXH-633Wby_Ai-mM1JT/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "04.pdf",
+              "url": "https://drive.google.com/file/d/18yP_5hFlfQo8jOAA_TtoC1Uk1Q4LunS0/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "05.pdf",
+              "url": "https://drive.google.com/file/d/1BGOBQp9TgTGTUWq7bhLIs3dPktquxEHP/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "06.pdf",
+              "url": "https://drive.google.com/file/d/1wTYh60rhI3JvUuoSNnDDO3CiGvaQotfH/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "07.pdf",
+              "url": "https://drive.google.com/file/d/18sriCuF2jAsqR8JXGY2gBBzPj9S7cy5f/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "08.pdf",
+              "url": "https://drive.google.com/file/d/1F3un-qoEVB9CwrI0D6SKPNIIhKxidTng/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "09.pdf",
+              "url": "https://drive.google.com/file/d/1Ve5q4Qodxhy5Op4x4dYJFXZ1RlnDki3C/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "10.pdf",
+              "url": "https://drive.google.com/file/d/1bz4K0gB8XSqTEWwaIpXbaiVCDPr_NuoY/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "11.pdf",
+              "url": "https://drive.google.com/file/d/1U1a1OVOwIfRnP4_8N067a7nY24MuEfTx/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "12.pdf",
+              "url": "https://drive.google.com/file/d/1eo-B0ycstSHgB3J_JOqg5w4MaCEv4tOK/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "13.pdf",
+              "url": "https://drive.google.com/file/d/1kr-Lq2dgCSeEgyC_4eIp1lNS3lljoITU/view?usp=drive_link"
+            },
+            {
+              "type": "file",
+              "name": "14.pdf",
+              "url": "https://drive.google.com/file/d/10ncElB4_HCg2rrMsda1LUxZqWYgPE-3u/view?usp=drive_link"
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "ITE 1213 - Computer Systems",
+          "children": [
+            {
+              "type": "file",
+              "name": "01.pdf",
+              "url": "https://drive.google.com/file/d/1hS6Bt9uA_c8kJ80NPy4dyus9m1X2W7fM/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "02.pdf",
+              "url": "https://drive.google.com/file/d/1b9oCWoY55BuuQYmRZMd57_t2wuhtm9i1/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "03.pdf",
+              "url": "https://drive.google.com/file/d/1aRoHKpx9sYR2xQ5g8hFZGMnRJGOwzQy8/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "04.pdf",
+              "url": "https://drive.google.com/file/d/1CBXvkWfFDO0p5mBErCfQPqjW1kWmmFvV/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "05.pdf",
+              "url": "https://drive.google.com/file/d/1XMLFePJ0wn9jVcHbkVXBnLKCFpf4Nl6d/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "06.pdf",
+              "url": "https://drive.google.com/file/d/1ZcnuJVSuQjPoYkFithHYsMLS5M-5kSFd/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "07.pdf",
+              "url": "https://drive.google.com/file/d/1w31mayy6tM3xvmxpRnKxDo5dAZHIkF89/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "08.pdf",
+              "url": "https://drive.google.com/file/d/1LmoEheEyv7LEXwMNU30GefG7Ktef0Rjq/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "09.pdf",
+              "url": "https://drive.google.com/file/d/1IYcWTwqP2iCh1x5-22kwThCKq7_cADmy/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "10.pdf",
+              "url": "https://drive.google.com/file/d/1utsiAXVrkx7vWzHUmxhhmDsA9ezoye91/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "11.pdf",
+              "url": "https://drive.google.com/file/d/10RhZy3rEWq_dfq3Zo5m4TMsAPcHj8jsy/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "12.pdf",
+              "url": "https://drive.google.com/file/d/1ep40Mwbo5lzrrS9pPqWlbTUP-mEB8ofm/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "13.pdf",
+              "url": "https://drive.google.com/file/d/1VAdVBvkebkkZvAMTknKrkDvSYbwkbL5_/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "14.pdf",
+              "url": "https://drive.google.com/file/d/1YZ0KZGvkOVPUjL50HwiJLqJOyoolquno/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "Number_Systems.pdf",
+              "url": "https://drive.google.com/file/d/1cnE1cYnMdc1l5xd3tPyD8SPXNrLUUvCo/view?usp=sharing"
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "ITE 1813 - Mathematics & Statistics for IT",
+          "children": [
+            {
+              "type": "file",
+              "name": "W01.pdf",
+              "url": "https://drive.google.com/file/d/1GP4SwFzNF-wjU46MF0IEfelztQmuWh0_/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W02.pdf",
+              "url": "https://drive.google.com/file/d/1TCUi1Q3NaIAsfiCOcu4_O11vgYYXazSy/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W03.pdf",
+              "url": "https://drive.google.com/file/d/1VPR6bCsdJzkB1XVjJhqkbW6F9LSQRgKx/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W04.pdf",
+              "url": "https://drive.google.com/file/d/12lN4vUafZCLxkyiRBsSfWEpX6ffvtLca/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W05.pdf",
+              "url": "https://drive.google.com/file/d/1og6v-szU2NLpU--7mT0O6W0DUtmP7PVa/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W06.pdf",
+              "url": "https://drive.google.com/file/d/12PleCaH-JZAdcBsxYNsfEgJ2Pn0EXeyb/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W07.pdf",
+              "url": "https://drive.google.com/file/d/1Rys3ef0wh4UzPerw3uWiznkrN0scipce/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W08.pdf",
+              "url": "https://drive.google.com/file/d/1kzEA71yG36CsTL2w-A1eR804-CbdPe5p/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W09.pdf",
+              "url": "https://drive.google.com/file/d/1uK4DOTbtQ8JAv9nGAI5GN4svQq-oCkhD/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W10.pdf",
+              "url": "https://drive.google.com/file/d/1FIDp3QvDeATHkmF9ZXLyrD_0KYqkENCK/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W11.pdf",
+              "url": "https://drive.google.com/file/d/1axYVa0g6np827S4j__MAP9K9iM3jcSSN/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W12.pdf",
+              "url": "https://drive.google.com/file/d/1Ns65Qebox0XonSfX2Z8WAmH3IZzc4oPL/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W13.pdf",
+              "url": "https://drive.google.com/file/d/1lrIF9iv-wtd7GgbuV-zjfp5Z9t9PpBOq/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W14.pdf",
+              "url": "https://drive.google.com/file/d/1b8nae7BfiXNU2iCQDGzhfcp51V8q3N0H/view?usp=sharing"
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "ITE 1713 - Web Design",
+          "children": [
+            {
+              "type": "file",
+              "name": "01.pdf",
+              "url": "https://drive.google.com/file/d/1LZGd3W6GcM_rZ1wlY4O7tthjranTwfVJ/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "02.pdf",
+              "url": "https://drive.google.com/file/d/1N6GtocwtRuXV1RqiW0JiW3HMcZ90E-Cu/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "03.pdf",
+              "url": "https://drive.google.com/file/d/1hOy7EGKRdLv8Bb_TBbRAiTkwQo9UEU2l/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "04.pdf",
+              "url": "https://drive.google.com/file/d/1Ur0BpUZTv1J-ghkNz62mwAPg19USgiQa/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "05.pdf",
+              "url": "https://drive.google.com/file/d/138M_7vdMmauyGAWmsstydkaqMLntdf3M/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "06.pdf",
+              "url": "https://drive.google.com/file/d/1wUV-bfs4KqFg0Gc0qI7X7-C7LkIBZoby/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "07.pdf",
+              "url": "https://drive.google.com/file/d/1sHeMd24csJC9q9KKo0fg9gPfjHxKTg1J/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "08.pdf",
+              "url": "https://drive.google.com/file/d/1zLYiWixOv292jta44tOfwTKDnNh3QWe6/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "09.pdf",
+              "url": "https://drive.google.com/file/d/1RT3cXPhf8swI5Z6K0EWxfBG5xXNXux8F/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "10.pdf",
+              "url": "https://drive.google.com/file/d/19uoNE1nVkKZ6TP01HtFuPKu7jcNbdNCG/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "11.pdf",
+              "url": "https://drive.google.com/file/d/1HsK97Sj_WZ3236eBuqrlw99BjXhMKLAI/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "13.pdf",
+              "url": "https://drive.google.com/file/d/1lIPwciuV7BDQ5zHrlg0gu1Mnyn0oEOFb/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "14.pdf",
+              "url": "https://drive.google.com/file/d/17-ub1e-lzVPKDszBhEBiiIagNiy9Sx4O/view?usp=sharing"
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "ITE 1123 - Fundamentals of Programming",
+          "children": [
+            {
+              "type": "file",
+              "name": "01.pdf",
+              "url": "https://drive.google.com/file/d/1fuxk8F1zO76dUbgpz-gEChCc8NthNLw3/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "02.pdf",
+              "url": "https://drive.google.com/file/d/1RS1JKUE-ZLKsJsnkkQ5YMMg7HHpipOsq/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "03.pdf",
+              "url": "https://drive.google.com/file/d/1yqVE11Te_z-nxp01ZcHJygNyGd6Fvp9P/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "04.pdf",
+              "url": "https://drive.google.com/file/d/1IJj_ET8TFd8DyMwUBTCtm0fEQxrZL6Zj/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "05.pdf",
+              "url": "https://drive.google.com/file/d/1l7B_Ssq5xC42976UXqiPuhwzcoN1ScxR/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "06.pdf",
+              "url": "https://drive.google.com/file/d/1lgx3JUw9KUjcUsoIroMLGEj1hzyya9Cy/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "07.pdf",
+              "url": "https://drive.google.com/file/d/12l9k-bGO48rditnr80Sz49fHXdcfUnmm/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "08.pdf",
+              "url": "https://drive.google.com/file/d/1vYHTcFF2j0hKMQxL-NVNO3stZi3AmgBg/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "09.pdf",
+              "url": "https://drive.google.com/file/d/1mfJOz_rxbOKnBdMn6WzrxacxFWP3ZsCe/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "10.pdf",
+              "url": "https://drive.google.com/file/d/123bLfCqxGDYmqvjHci7jjmDU28UX21hY/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "11.pdf",
+              "url": "https://drive.google.com/file/d/18ePVYLLMbQqdty34xEIpM8aNjZjZ8a1s/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "12.pdf",
+              "url": "https://drive.google.com/file/d/1Mflyn_XNt3gqhVboq3NjKavcAg8Z3ixq/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "13.pdf",
+              "url": "https://drive.google.com/file/d/1SxAAM-nBP3xxfNxv_Lym9Di8JaE1qN4y/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "14.pdf",
+              "url": "https://drive.google.com/file/d/1KoQvM87_6YY2yHOOWHYS6Z0qxoq8mSKB/view?usp=sharing"
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "ITE 1923 - ICT Skills and Applications",
+          "children": [
+            {
+              "type": "file",
+              "name": "W01 - Introduction to ICT Applications (i).pdf",
+              "url": "https://drive.google.com/file/d/1Tb9ECTdaosOh-4fFF5Su4x7oz9ITTrwX/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W02 - Introduction to ICT Applications (ii) - Storage.pdf",
+              "url": "https://drive.google.com/file/d/1rrvIINJZl0epfivwVlo27UQj-yJN0ttn/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W02 - Introduction to ICT Applications (ii) - Software.pdf",
+              "url": "https://drive.google.com/file/d/1GBwpCULuhxtw-mGsXoVapLOU2ZFM6Pf5/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W03 - Word Processing 1.pdf",
+              "url": "https://drive.google.com/file/d/1zWkvMDftRZncphsH0e1dhG54bWWhsZrP/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W04 - Word Processing 2.pdf",
+              "url": "https://drive.google.com/file/d/1a06110MN-2x0QKbdhL3W0OtUwM4vTk9S/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W05 - Word Processing 3.pdf",
+              "url": "https://drive.google.com/file/d/1EAkRYMqbp9_6jlFv7WomVp7xMugqTLws/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W06 - Spreadsheets 1.pdf",
+              "url": "https://drive.google.com/file/d/1hU1ysG_-XzqLSzPV4YDPzOodceMGs2pc/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W07 - Spreadsheets 2.pdf",
+              "url": "https://drive.google.com/file/d/1Vp6IxmuwWs5Y5A2mYqpOjBhGq3TmV_mP/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W08 - Spreadsheets 3.pdf",
+              "url": "https://drive.google.com/file/d/18IIDSqjoi094HJm4BXH2AHz9NPmc2zgc/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W09 - Presentation Software.pdf",
+              "url": "https://drive.google.com/file/d/1a3tcSDs1aH3JI8Oi4czryI-4rPL5LqrL/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W10 - Canva Presentation Software.pdf",
+              "url": "https://drive.google.com/file/d/1hai5TQLZsS0xqBmA-tQDwP-k4lLdKCD0/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W11 - Communication &amp; Networking.pdf",
+              "url": "https://drive.google.com/file/d/1EfCxMDfivDWIe9BKksBK6fi-UZxN5cWV/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W12 - Communication &amp; Networking 2.pdf",
+              "url": "https://drive.google.com/file/d/1CE9MrAVHg9O5P4E-L_uvgWJ0nkKWRuYv/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W13 - Digital Research Skills.pdf",
+              "url": "https://drive.google.com/file/d/1eU0zvfms_zxqNmq0OF37ebvbry2K55FL/view?usp=sharing"
+            },
+            {
+              "type": "file",
+              "name": "W14 - Digital Citizenship.pdf",
+              "url": "https://drive.google.com/file/d/1iQhG8sjaduk45BfD0Jrrrb93kTAdYRDC/view?usp=sharing"
+            }
+          ]
+        }
+      ]
+    }
   ]
 };
 
-/* ================================================================
-   PAST PAPERS STRUCTURE CONFIGURATION
-   ----------------------------------------------------------------
-   Same idea as FOLDER_STRUCTURE above, but for past exam papers.
-   Hardcoded JSON, no backend, fully static.
-
-   ARCHITECTURE:
-     papers/
-       sem-1/
-         <module-name>/   (a folder, one per module/course)
-           paper.md         (the past paper for that module)
-         <module-name>/
-           paper.md
-       sem-2/
-         <module-name>/
-           paper.md
-       ...
-
-   HOW TO ADD A NEW SEMESTER:
-     Add a new folder object to PAPERS_STRUCTURE.children, e.g.:
-       { type: "folder", name: "sem-3", children: [ ... ] }
-
-   HOW TO ADD A NEW MODULE (FOLDER) INSIDE A SEMESTER:
-     { type: "folder", name: "operating-systems", children: [
-         { type: "file", name: "paper.md", path: "papers/sem-3/operating-systems/paper.md" }
-     ] }
-
-   HOW TO ADD ANOTHER PAPER TO A MODULE (e.g. a resit or older year):
-     Add another file object inside that module's "children" array:
-       { type: "file", name: "paper-2023.md", path: "papers/sem-1/introduction-to-programming/paper-2023.md" }
-     Make sure the .md file actually exists at that path in the repo.
-   ================================================================ */
 const PAPERS_STRUCTURE = {
-  type: "folder",
-  name: "papers",
-  children: [
-    // EMPTY ON PURPOSE — this is a clean skeleton ready for your real content.
-    // Paste in semester blocks like the example below (then delete this comment).
-    //
-    // {
-    //   type: "folder",
-    //   name: "sem-1",
-    //   children: [
-    //     {
-    //       type: "folder",
-    //       name: "introduction-to-programming",
-    //       children: [
-    //         { type: "file", name: "paper.md", path: "papers/sem-1/introduction-to-programming/paper.md" }
-    //       ]
-    //     }
-    //   ]
-    // },
-  ]
+  "type": "folder",
+  "name": "papers",
+  "children": []
 };
 
-/* ================================================================
-   TREE RENDERING + MARKDOWN VIEWER (reusable)
-   ----------------------------------------------------------------
-   This factory builds a tree navigator + doc viewer pair bound to
-   a specific tree container and content panel. It's used once for
-   the Notes tab and once for the Past Papers tab below, so both
-   tabs work fully independently of each other.
-   ================================================================ */
 function glyphFor(type, isOpen){
   if (type === "folder") return isOpen ? "▾" : "▸";
   return "·";
@@ -763,10 +1164,7 @@ function escapeHtml(str){
   }[c]));
 }
 
-function createDocBrowser(structure, treeContainerEl, contentPanelEl, idPrefix){
-  let currentRawMarkdown = "";
-  let currentFileName = "";
-
+function createDocBrowser(structure, treeContainerEl, contentPanelEl){
   function buildTree(node, container){
     node.children.forEach(child => {
       const li = document.createElement("li");
@@ -787,7 +1185,7 @@ function createDocBrowser(structure, treeContainerEl, contentPanelEl, idPrefix){
       if (child.type === "file") {
         const tag = document.createElement("span");
         tag.className = "tag";
-        tag.textContent = "md";
+        tag.textContent = "pdf";
         row.appendChild(tag);
       }
 
@@ -809,84 +1207,50 @@ function createDocBrowser(structure, treeContainerEl, contentPanelEl, idPrefix){
         row.addEventListener("click", () => {
           treeContainerEl.querySelectorAll(".node.active").forEach(n => n.classList.remove("active"));
           row.classList.add("active");
-          loadMarkdownFile(child.path, child.name);
+          loadPdfFile(child.url, child.name);
         });
       }
-
       container.appendChild(li);
     });
   }
 
-  async function loadMarkdownFile(path, fileName){
-    currentFileName = fileName;
-    renderShell(path, fileName, "<div class=\"status-msg\">Loading " + escapeHtml(fileName) + " ...</div>");
-
+  function extractDriveFileId(url){
     try {
-      const res = await fetch(path);
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const md = await res.text();
-      currentRawMarkdown = md;
-      const html = marked.parse(md);
-      renderShell(path, fileName, html);
-    } catch (err) {
-      currentRawMarkdown = "";
-      renderShell(path, fileName,
-        "<div class=\"status-msg\">Could not load this file (" + escapeHtml(err.message) + ").<br>" +
-        "Make sure <code>" + escapeHtml(path) + "</code> exists in the repository.</div>");
-    }
+      let m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (m) return m[1];
+      m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (m) return m[1];
+      return null;
+    } catch (e) { return null; }
   }
 
-  function renderShell(path, fileName, bodyHtml){
-    const viewBtnId = idPrefix + "-btn-view";
-    const pdfBtnId = idPrefix + "-btn-download-pdf";
-    const renderedId = idPrefix + "-rendered-md";
+  function toDrivePreviewUrl(url){
+    const id = extractDriveFileId(url);
+    return id ? `https://drive.google.com/file/d/${id}/preview` : url;
+  }
 
+  function loadPdfFile(url, fileName){
+    renderShell(url, fileName);
+  }
+
+  function renderShell(url, fileName){
+    const openUrl = url;
     contentPanelEl.innerHTML = `
       <div class="doc-toolbar">
-        <div class="doc-path">${escapeHtml(path)}</div>
+        <div class="doc-path"><b>${escapeHtml(fileName)}</b></div>
         <div class="doc-actions">
-          <button class="btn primary" id="${viewBtnId}">View</button>
-          <button class="btn" id="${pdfBtnId}">Download .pdf</button>
+          <button type="button" class="btn btn-icon" title="Open PDF in new tab" aria-label="Open PDF" onclick="openPdf('${escapeHtml(openUrl)}')">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+          </button>
         </div>
       </div>
-      <div class="doc-body">
-        <div id="${renderedId}">${bodyHtml}</div>
+      <div class="pdf-preview-wrap">
+        <iframe class="pdf-frame" src="${escapeHtml(toDrivePreviewUrl(url))}" allow="autoplay" allowfullscreen loading="lazy"></iframe>
+        <div class="status-msg" style="padding-top:14px;">
+          If the preview above doesn't load, make sure the Drive file's sharing is set to "Anyone with the link", or use the open icon to view it directly.
+        </div>
       </div>
     `;
-
-    document.getElementById(viewBtnId).addEventListener("click", () => {
-      if (currentRawMarkdown) {
-        document.getElementById(renderedId).innerHTML = marked.parse(currentRawMarkdown);
-      }
-    });
-
-    document.getElementById(pdfBtnId).addEventListener("click", () => {
-      downloadPdf(fileName, renderedId);
-    });
-  }
-
-  function downloadPdf(fileName, renderedId){
-    const el = document.getElementById(renderedId);
-    if (!el || !el.innerHTML.trim()) { alert("Nothing to export yet."); return; }
-    const pdfName = fileName.replace(/\.md$/i, "") + ".pdf";
-
-    const opt = {
-      margin:       0.5,
-      filename:     pdfName,
-      image:        { type: "jpeg", quality: 0.98 },
-      html2canvas:  { scale: 2, backgroundColor: "#ffffff" },
-      jsPDF:        { unit: "in", format: "a4", orientation: "portrait" }
-    };
-
-    // Clone into a light-themed wrapper so the PDF is readable on paper
-    const wrapper = document.createElement("div");
-    wrapper.style.background = "#ffffff";
-    wrapper.style.color = "#111111";
-    wrapper.style.padding = "20px";
-    wrapper.style.fontFamily = "Helvetica, Arial, sans-serif";
-    wrapper.innerHTML = el.innerHTML;
-
-    html2pdf().set(opt).from(wrapper).save();
   }
 
   buildTree(structure, treeContainerEl);
@@ -898,12 +1262,9 @@ function createDocBrowser(structure, treeContainerEl, contentPanelEl, idPrefix){
   }
 }
 
-createDocBrowser(FOLDER_STRUCTURE, document.getElementById("tree-root"), document.getElementById("content-panel"), "notes");
-createDocBrowser(PAPERS_STRUCTURE, document.getElementById("tree-root-papers"), document.getElementById("content-panel-papers"), "papers");
+createDocBrowser(FOLDER_STRUCTURE, document.getElementById("tree-root"), document.getElementById("content-panel"));
+createDocBrowser(PAPERS_STRUCTURE, document.getElementById("tree-root-papers"), document.getElementById("content-panel-papers"));
 
-/* ================================================================
-   LIGHT / DARK THEME TOGGLE
-   ================================================================ */
 const themeToggleBtn = document.getElementById("theme-toggle");
 
 function applyTheme(theme){
@@ -920,13 +1281,12 @@ themeToggleBtn.addEventListener("click", () => {
   applyTheme(next);
 });
 
-/* ================================================================
-   MAIN VIEW TABS (Notes <-> GPA Calculator)
-   Notes and the GPA Calculator are two separate, independent
-   features. Notes is the primary/default view.
-   ================================================================ */
 const tabBtns = document.querySelectorAll(".tab-btn");
-const allViews = { notes: document.getElementById("view-notes"), papers: document.getElementById("view-papers"), gpa: document.getElementById("view-gpa") };
+const allViews = {
+  notes: document.getElementById("view-notes"),
+  papers: document.getElementById("view-papers"),
+  gpa: document.getElementById("view-gpa")
+};
 tabBtns.forEach(btn => {
   btn.addEventListener("click", () => {
     tabBtns.forEach(b => b.classList.remove("active"));
@@ -937,25 +1297,6 @@ tabBtns.forEach(btn => {
   });
 });
 
-/* ================================================================
-   GPA CALCULATOR — University of Moratuwa, BIT degree regulations
-   ----------------------------------------------------------------
-   Entirely client-side. All data lives in localStorage on the
-   user's own device (key: "bit-gpa-data") — nothing is ever sent
-   anywhere. See the on-screen warning banner: clearing browser
-   data, private/incognito mode, or a different browser/device
-   means this data will NOT be there. "Copy share link" encodes
-   the full dataset into a URL so it can be backed up or moved.
-
-   Structure mirrors the degree itself: each Level has two
-   Semesters, each Semester has course modules. SGPA = per
-   semester, LGPA = per level (its two semesters combined), and
-   the final Class is awarded from the Level 3 LGPA (Table 2 of
-   the academic regulations).
-   ================================================================ */
-
-// Official UoM BIT grading table (Table 10). T and X carry no
-// grade point and are excluded from GPA/credit calculations.
 const GRADE_POINTS = {
   "A+": 4.00, "A": 4.00, "A-": 3.70,
   "B+": 3.30, "B": 3.00, "B-": 2.70,
@@ -966,7 +1307,6 @@ const GRADE_POINTS = {
 };
 const GRADE_LIST = Object.keys(GRADE_POINTS);
 
-// Table 2: Guide to determine Classes, based on Level 3 LGPA.
 function classForLgpa(lgpa){
   if (lgpa >= 3.70) return "First Class";
   if (lgpa >= 3.30) return "Second Class – Upper Division";
@@ -989,50 +1329,44 @@ function defaultGpaState(){
       { id: "L3", name: "Level 3", semesters: [ newSemester("Semester 1"), newSemester("Semester 2") ] }
     ],
     activeLevelId: "L1",
-    activeSemesterId: null // set after creation, see below
+    activeSemesterId: null
   };
 }
 
 let gpaState = loadGpaState();
-// Make sure the active semester points at something real on first load.
 if (!gpaState.activeSemesterId) {
   gpaState.activeSemesterId = gpaState.levels[0].semesters[0].id;
 }
 
 function loadGpaState(){
-  // 1. A shared link always takes priority if present.
   const params = new URLSearchParams(window.location.search);
   const shared = params.get("gpa");
   if (shared) {
     try {
       const decoded = JSON.parse(decodeURIComponent(escape(atob(shared))));
       if (decoded && decoded.levels) {
-        const overwrite = confirm(
-          "This link contains a shared GPA sheet. Loading it will REPLACE any GPA data " +
-          "already saved on this device. Continue?"
-        );
+        const overwrite = confirm("This link contains a shared GPA sheet. Loading it will REPLACE any GPA data already saved on this device. Continue?");
         if (overwrite) {
           localStorage.setItem(GPA_STORAGE_KEY, JSON.stringify(decoded));
           return decoded;
         }
       }
-    } catch (e) { /* ignore malformed share payloads */ }
+    } catch (e) {}
   }
-  // 2. Otherwise fall back to whatever is saved locally.
   try {
     const raw = localStorage.getItem(GPA_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.levels) return parsed;
     }
-  } catch (e) { /* corrupted localStorage, ignore */ }
+  } catch (e) {}
   return defaultGpaState();
 }
 
 function saveGpaState(){
   try {
     localStorage.setItem(GPA_STORAGE_KEY, JSON.stringify(gpaState));
-  } catch (e) { /* storage full or unavailable */ }
+  } catch (e) {}
 }
 
 function currentLevel(){
@@ -1045,9 +1379,7 @@ function currentSemester(){
 }
 
 function gradeOptionsHtml(selected){
-  return GRADE_LIST.map(g =>
-    `<option value="${g}" ${g === selected ? "selected" : ""}>${g}</option>`
-  ).join("");
+  return GRADE_LIST.map(g => `<option value="${g}" ${g === selected ? "selected" : ""}>${g}</option>`).join("");
 }
 
 function pointFor(grade){
@@ -1058,7 +1390,7 @@ function weightedResult(courses){
   let totalCredits = 0, totalPoints = 0;
   courses.forEach(c => {
     const point = pointFor(c.grade);
-    if (point === null) return; // T / X — excluded entirely
+    if (point === null) return;
     const credits = parseFloat(c.credits) || 0;
     totalCredits += credits;
     totalPoints += credits * point;
@@ -1137,10 +1469,8 @@ function renderCourseRows(){
   const tbody = document.getElementById("course-rows");
   tbody.innerHTML = "";
   const sem = currentSemester();
-
   sem.courses.forEach((course, idx) => {
     const tr = document.createElement("tr");
-
     const tdSubject = document.createElement("td");
     const subjectInput = document.createElement("input");
     subjectInput.type = "text";
@@ -1201,8 +1531,6 @@ function renderResults(){
   document.getElementById("semester-gpa").textContent = semGpa.toFixed(2);
   document.getElementById("level-gpa").textContent = lvlGpa.toFixed(2);
 
-  // Academic standing is always based on Level 3's LGPA specifically,
-  // per the degree regulations — regardless of which level is open.
   const level3 = gpaState.levels.find(l => l.name === "Level 3") || gpaState.levels.find(l => l.id === "L3");
   const standingEl = document.getElementById("academic-standing");
   if (level3) {
@@ -1228,10 +1556,7 @@ document.getElementById("btn-add-course").addEventListener("click", () => {
 });
 
 document.getElementById("btn-clear-data").addEventListener("click", () => {
-  const sure = confirm(
-    "This will permanently erase all GPA data saved on this device. " +
-    "This cannot be undone. Are you sure?"
-  );
+  const sure = confirm("This will permanently erase all GPA data saved on this device. This cannot be undone. Are you sure?");
   if (!sure) return;
   localStorage.removeItem(GPA_STORAGE_KEY);
   gpaState = defaultGpaState();
@@ -1260,6 +1585,29 @@ document.getElementById("btn-copy-share").addEventListener("click", () => {
 });
 
 renderAll();
+
+// ----- New function: open PDF in new tab -----
+function openPdf(url){
+  window.open(url, '_blank');
+  showThanksPopup();
+}
+
+function showThanksPopup(){
+  document.getElementById("thanks-overlay").classList.add("show");
+}
+function hideThanksPopup(){
+  document.getElementById("thanks-overlay").classList.remove("show");
+}
+
+// Event listeners for the overlay – now the elements exist
+document.getElementById("thanks-close-btn").addEventListener("click", hideThanksPopup);
+document.getElementById("thanks-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "thanks-overlay") hideThanksPopup();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") hideThanksPopup();
+});
 </script>
+
 </body>
 </html>
